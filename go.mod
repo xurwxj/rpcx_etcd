@@ -6,9 +6,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
-	github.com/rpcxio/libkv v0.5.1-0.20210420120011-1fceaedca8a5
 	github.com/rpcxio/rpcx-etcd v0.0.0-20210907081219-a9e31da236e8
-	github.com/rpcxio/rpcx-examples v1.1.6
 	github.com/rs/zerolog v1.20.0
 	github.com/smallnest/rpcx v1.6.11
 	github.com/soheilhy/cmux v0.1.5-0.20210205191134-5ec6847320e5 // indirect

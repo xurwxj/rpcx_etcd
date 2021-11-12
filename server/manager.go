@@ -1,50 +1,67 @@
 package server
 
 import (
-	"strings"
+	"time"
 
 	log "github.com/rs/zerolog"
 
-	"github.com/rpcxio/rpcx-etcd/serverplugin"
 	"github.com/smallnest/rpcx/server"
 	"github.com/xurwxj/rpcx_etcd/registry"
 )
 
-var s *server.Server
+type MicroServer struct {
+	RpcxServer *server.Server
+	Log        *log.Logger
 
-// 启动一个微服务监听服务，并将所具有的的微服务接口注册到etcd集群
-func StartServer(serverPlugin *serverplugin.EtcdV3RegisterPlugin, rs []*registry.ServiceFuncItem, log *log.Logger) bool {
-	s = server.NewServer()
-	addRegistryPlugin(s, serverPlugin, log)
+	ServiceAddress string
+}
+
+type ServerPlugin interface {
+	Start() error
+}
+
+// 添加server插件
+func (ms *MicroServer) AddServerPlugin(serverPlugin ServerPlugin) {
+	err := serverPlugin.Start()
+	if err != nil {
+		ms.Log.Err(err).Msg("addRegistryPlugin")
+	}
+	ms.RpcxServer.Plugins.Add(serverPlugin)
+}
+
+// 下架service 一分钟后停止服务
+func (ms *MicroServer) UnRegistryService() {
+	if err := ms.RpcxServer.UnregisterAll(); err != nil {
+		ms.Log.Err(err).Msg("UnRegistryService")
+		return
+	}
+	ms.Log.Info().Msg("UnRegistryService success !!!!! please wait one minute exit")
+	go ms.StopServer()
+}
+
+// 注册service
+func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 	for _, sf := range rs {
 		switch sf.SFType {
 		case "func":
-			s.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta)
+			ms.RpcxServer.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta)
 		case "class":
-			s.RegisterName(sf.SFName, sf.SFCall, sf.SFMeta)
+			ms.RpcxServer.RegisterName(sf.SFName, sf.SFCall, sf.SFMeta)
 		}
 	}
-	adderss := serverPlugin.ServiceAddress
-	strs := strings.Split(adderss, "@")
-	if len(strs) != 2 {
-		return false
-	}
-	err := s.Serve("tcp", strs[1])
+}
+
+// 启动一个微服务监听服务
+func (ms *MicroServer) StartServer() bool {
+	err := ms.RpcxServer.Serve("tcp", ms.ServiceAddress)
 	if err != nil {
 		panic(err)
 	}
-	log.Info().Msg("rpcx start success")
+	ms.Log.Info().Msg("rpcx start success")
 	return true
 }
 
-func addRegistryPlugin(s *server.Server, serverPlugin *serverplugin.EtcdV3RegisterPlugin, log *log.Logger) {
-	err := serverPlugin.Start()
-	if err != nil {
-		log.Err(err).Msg("addRegistryPlugin")
-	}
-	s.Plugins.Add(serverPlugin)
-}
-
-func StopServer() {
-	s.Close()
+func (ms *MicroServer) StopServer() {
+	time.Sleep(60 * time.Second)
+	ms.RpcxServer.Close()
 }

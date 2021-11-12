@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,12 @@ import (
 type ServiceFunc struct {
 	Address string
 	SFMeta  string
+}
+
+// serviceMeta obj struct for microservice's meta
+type serviceMeta struct {
+	Auth string `json:"auth,omitempty" `
+	Path string `json:"path,omitempty" `
 }
 
 var MicroservicesData map[string]map[string][]ServiceFunc
@@ -29,34 +36,45 @@ func StartWatchServices(basePath, mod string, etcdAddrss []string) {
 }
 
 // 将通知的数据做处理 过滤一些没带地址的数据
-// eds/xxxxx.product.ed.status/tcp@localhost:8972 这些是需要的数据key
+// xxxxx.product.ed.status/tcp@localhost:8972 这些是需要的数据key
 func collectServiceData(wresp []*client.KVPair) {
-	MicroservicesData = make(map[string]map[string][]ServiceFunc)
+	tmpData := make(map[string]map[string][]ServiceFunc)
 	for _, v := range wresp {
 		keys := strings.Split(v.Key, "/")
-		if len(keys) != 3 {
+		if len(keys) != 2 {
 			continue
 		}
-		microservicesName, serviceName, address := keys[0], keys[1], keys[2]
+
+		infos := strings.Split(v.Value, "=")
+		if len(infos) != 2 {
+			continue
+		}
+		meta := serviceMeta{}
+		if err := json.Unmarshal([]byte(infos[1]), &meta); err != nil {
+			continue
+		}
+
+		serviceName, address := keys[0], keys[1]
 		newServiceFunc := ServiceFunc{
 			Address: address,
 			SFMeta:  v.Value,
 		}
-		serviceMap, ok := MicroservicesData[microservicesName]
+		serviceMap, ok := tmpData[meta.Path]
 		if !ok {
 			serviceMap = make(map[string][]ServiceFunc)
 			serviceMap[serviceName] = []ServiceFunc{newServiceFunc}
-			MicroservicesData[microservicesName] = serviceMap
+			tmpData[meta.Path] = serviceMap
 			continue
 		}
 
 		if serviceFuncs, ok := serviceMap[serviceName]; ok {
 			serviceFuncs = append(serviceFuncs, newServiceFunc)
 			serviceMap[serviceName] = serviceFuncs
-			MicroservicesData[microservicesName] = serviceMap
+			tmpData[meta.Path] = serviceMap
 			continue
 		}
 		serviceMap[serviceName] = []ServiceFunc{newServiceFunc}
-		MicroservicesData[microservicesName] = serviceMap
+		tmpData[meta.Path] = serviceMap
 	}
+	MicroservicesData = tmpData
 }

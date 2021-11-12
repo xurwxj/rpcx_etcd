@@ -22,15 +22,12 @@ func StartKvWatch(watchConfig *EtcdKVWatchConfig) {
 		Endpoints:   watchConfig.EtcdAddrss, //etcd集群三个实例的端口
 		DialTimeout: time.Duration(watchConfig.DialTimeout) * time.Second,
 	})
-
 	if err != nil {
 		watchConfig.Log.Err(err).Msg("connect failed")
 		return
 	}
 	watchConfig.Log.Debug().Msg("connect succ")
-
 	defer cli.Close()
-
 	rch := cli.Watch(context.Background(), watchConfig.Key)
 	for wresp := range rch { //阻塞在这里，如果没有key里没有变化，就一直停留在这里
 		for _, ev := range wresp.Events {

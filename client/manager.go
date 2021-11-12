@@ -1,7 +1,7 @@
 package client
 
 import (
-	"fmt"
+	"context"
 
 	log "github.com/rs/zerolog"
 
@@ -10,13 +10,13 @@ import (
 	"github.com/smallnest/rpcx/client"
 )
 
-var ServiceClientPoolMap cmap.ConcurrentMap
+var serviceClientPoolMap cmap.ConcurrentMap
 var clientConfig *RpcxClientConfig
 
 type RpcxClientConfig struct {
-	BasePath   string // /services/dev
-	EtcdAddrss []string
-	PoolSize   int
+	BasePath   string   // /services/dev
+	EtcdAddrss []string // etcd地址
+	PoolSize   int      // 连接池
 
 	FailMode   client.FailMode
 	SelectMode client.SelectMode
@@ -26,20 +26,33 @@ type RpcxClientConfig struct {
 
 // 初始化微服务客户端参数
 func InitClient(rpcxClientConfig *RpcxClientConfig) {
-	ServiceClientPoolMap = cmap.New()
+	serviceClientPoolMap = cmap.New()
 	clientConfig = rpcxClientConfig
 }
 
-// 通过微服务和接口服务名称，获取一个该微服务服务的连接的客户端
-// microservices = "eds"
+// 向微服务发送rpcx请求
+func CallService(ctx context.Context, service, serviceMethod string, args, reply interface{}) bool {
+	xclient := getXclient(service)
+	if xclient == nil {
+		clientConfig.Log.Error().Msg("get service client nil ")
+		return false
+	}
+	err := xclient.Call(ctx, serviceMethod, args, reply)
+	if err != nil {
+		clientConfig.Log.Err(err).Msg("get service client ")
+		return false
+	}
+	return true
+}
+
+// 通过接口服务名称，获取一个该接口服务的连接的客户端
 // service = "xxxxx.product.ed.status"
-func GetXclient(microservices, service string) client.XClient {
-	service = fmt.Sprintf("%s/%s", microservices, service)
-	if ServiceClientPoolMap == nil {
+func getXclient(service string) client.XClient {
+	if serviceClientPoolMap == nil {
 		clientConfig.Log.Error().Msg("please init client ===")
 		return nil
 	}
-	if xc, has := ServiceClientPoolMap.Get(service); has {
+	if xc, has := serviceClientPoolMap.Get(service); has {
 		x := xc.(*client.XClientPool).Get()
 		if x != nil {
 			return x
@@ -52,6 +65,6 @@ func GetXclient(microservices, service string) client.XClient {
 		return nil
 	}
 	xclientPool := client.NewXClientPool(clientConfig.PoolSize, service, clientConfig.FailMode, clientConfig.SelectMode, d, clientConfig.Option)
-	ServiceClientPoolMap.Set(service, xclientPool)
+	serviceClientPoolMap.Set(service, xclientPool)
 	return xclientPool.Get()
 }
