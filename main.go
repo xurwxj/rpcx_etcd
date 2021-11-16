@@ -7,11 +7,13 @@ import (
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/rpcxio/libkv/store"
 	"github.com/rpcxio/rpcx-etcd/serverplugin"
 	"github.com/rs/zerolog"
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/server"
 	service_client "github.com/xurwxj/rpcx_etcd/client"
+	"github.com/xurwxj/rpcx_etcd/config"
 	services "github.com/xurwxj/rpcx_etcd/demoServices"
 	"github.com/xurwxj/rpcx_etcd/discovery"
 	"github.com/xurwxj/rpcx_etcd/registry"
@@ -30,10 +32,10 @@ func main() {
 
 	flag.Parse()
 
-	// go StartServer()
-	// time.Sleep(2 * time.Second)
-	// go startClient()
-	go watchServices()
+	go StartServer()
+	time.Sleep(2 * time.Second)
+	go startClient()
+	// go watchServices()
 	// time.Sleep(1 * time.Second)
 
 	// go test()
@@ -68,7 +70,19 @@ func test() {
 }
 
 func watchServices() {
-	discovery.StartWatchServices("/services", "dev", []string{*etcdAddr})
+	options := &store.Config{
+		Username: "devserver",
+		Password: "o9i8u7y6",
+	}
+	param := &discovery.ServiceWactchParam{
+		BasePath:   "/services",
+		Mod:        "dev",
+		EtcdAddrss: []string{*etcdAddr},
+		Options:    options,
+		CallBack:   nil,
+	}
+
+	discovery.StartWatchServices(param)
 }
 
 func StartServer() {
@@ -83,8 +97,12 @@ func StartServer() {
 		EtcdServers:    []string{*etcdAddr},
 		BasePath:       *basePath,
 		UpdateInterval: time.Minute,
+		Options:        new(store.Config),
 	}
 	r.UpdateInterval = -1
+
+	// r.Options.Username = "devserver"
+	// r.Options.Password = "o9i8u7y6"
 	server.AddServerPlugin(r)
 	rs := []registry.ServiceFuncItem{
 		registry.GetServiceFunc(registry.ServiceFuncOBJ{
@@ -95,10 +113,14 @@ func StartServer() {
 			ServiceFuncCommon: registry.ServiceFuncCommon{SFType: "func", SFName: "xxxxxx.product.ed.status", SFCall: services.Add},
 			SFMeta:            registry.ServiceFuncMeta{URLName: "productEDStatus", FuncName: "ProductEDStatus", URLPath: "/product/ed/status", HTTPMethod: "POST", AuthLevel: "api"},
 		}),
+		registry.GetServiceFunc(registry.ServiceFuncOBJ{
+			ServiceFuncCommon: registry.ServiceFuncCommon{SFType: "class", SFName: "xxxxxx.ed.DentalED", SFCall: new(services.DentaladminSS)},
+			SFMeta:            registry.ServiceFuncMeta{Funcs: []string{"DentalEDRFS"}},
+		}),
 	}
 	server.RegistryService(rs)
 	go server.StartServer()
-	go stop(server)
+	// go stop(server)
 }
 
 func stop(server *serverEtcd.MicroServer) {
@@ -116,6 +138,10 @@ func startClient() {
 		SelectMode: client.RoundRobin,
 		Option:     client.DefaultOption,
 		Log:        &zerolog.Logger{},
+		// Options: &store.Config{
+		// 	Username: "devserver",
+		// 	Password: "o9i8u7y6",
+		// },
 	}
 	service_client.InitClient(param)
 	for {
@@ -124,10 +150,20 @@ func startClient() {
 			B: 20,
 		}
 		reply := &services.Reply{}
-		service_client.CallService(context.Background(), "xxxxxx.product.ed.status", "Add", args, reply)
+		service_client.CallService("xxxxxx.product.ed.status", "Add", args, reply)
 
 		fmt.Println("A* B = C", args.A, args.B, reply.C)
 		time.Sleep(2 * time.Second)
 	}
+
+}
+
+func configs() {
+	a := config.EtcdKVWatchConfig{
+		EtcdAddrss:      []string{*etcdAddr},
+		Key:             "/config/dev/eds",
+		MergeConfigFunc: nil,
+	}
+	config.StartKvWatch(&a)
 
 }

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 
+	"github.com/rpcxio/libkv/store"
 	log "github.com/rs/zerolog"
 
 	cmap "github.com/orcaman/concurrent-map"
@@ -22,6 +23,7 @@ type RpcxClientConfig struct {
 	SelectMode client.SelectMode
 	Option     client.Option
 	Log        *log.Logger
+	Options    *store.Config
 }
 
 // 初始化微服务客户端参数
@@ -31,7 +33,8 @@ func InitClient(rpcxClientConfig *RpcxClientConfig) {
 }
 
 // 向微服务发送rpcx请求
-func CallService(ctx context.Context, service, serviceMethod string, args, reply interface{}) bool {
+func CallService(service, serviceMethod string, args, reply interface{}) bool {
+	ctx := context.Background()
 	xclient := getXclient(service)
 	if xclient == nil {
 		clientConfig.Log.Error().Msg("get service client nil ")
@@ -59,7 +62,7 @@ func getXclient(service string) client.XClient {
 		}
 	}
 
-	d, err := etcd_client.NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, nil)
+	d, err := etcd_client.NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
 	if err != nil {
 		clientConfig.Log.Err(err).Msg("GetXclient")
 		return nil
