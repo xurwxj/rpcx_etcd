@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
@@ -24,18 +25,19 @@ import (
 
 var (
 	addr     = flag.String("addr", "localhost:8973", "server address")
-	etcdAddr = flag.String("etcdAddr", "localhost:22379", "etcd address")
+	etcdAddr = flag.String("etcdAddr", "etcd.shining3d.io:2399", "etcd address")
 	basePath = flag.String("base", "/services/dev", "prefix path")
 )
 
 func main() {
 
 	flag.Parse()
-
-	go StartServer()
-	time.Sleep(2 * time.Second)
-	go startClient()
-	// go watchServices()
+	// go configs()
+	// go startClient()
+	// go StartServer()
+	// time.Sleep(2 * time.Second)
+	// go startClient()
+	go watchServices()
 	// time.Sleep(1 * time.Second)
 
 	// go test()
@@ -101,8 +103,8 @@ func StartServer() {
 	}
 	r.UpdateInterval = -1
 
-	// r.Options.Username = "devserver"
-	// r.Options.Password = "o9i8u7y6"
+	r.Options.Username = "devserver"
+	r.Options.Password = "o9i8u7y6"
 	server.AddServerPlugin(r)
 	rs := []registry.ServiceFuncItem{
 		registry.GetServiceFunc(registry.ServiceFuncOBJ{
@@ -138,10 +140,10 @@ func startClient() {
 		SelectMode: client.RoundRobin,
 		Option:     client.DefaultOption,
 		Log:        &zerolog.Logger{},
-		// Options: &store.Config{
-		// 	Username: "devserver",
-		// 	Password: "o9i8u7y6",
-		// },
+		Options: &store.Config{
+			Username: "devserver",
+			Password: "o9i8u7y6",
+		},
 	}
 	service_client.InitClient(param)
 	for {
@@ -163,7 +165,14 @@ func configs() {
 		EtcdAddrss:      []string{*etcdAddr},
 		Key:             "/config/dev/eds",
 		MergeConfigFunc: nil,
+		Options: &store.Config{
+			Username: "devserver",
+			Password: "o9i8u7y6",
+		},
 	}
-	config.StartKvWatch(&a)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	config.StartKvWatch(&a, nil)
+	wg.Wait()
 
 }
