@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	log "github.com/rs/zerolog"
 
 	"github.com/smallnest/rpcx/server"
@@ -35,8 +33,7 @@ func (ms *MicroServer) UnRegistryService() {
 		ms.Log.Err(err).Msg("UnRegistryService")
 		return
 	}
-	ms.Log.Info().Msg("UnRegistryService success !!!!! please wait one minute exit")
-	go ms.StopServer()
+	ms.Log.Info().Msg("UnRegistryService success !!!!")
 }
 
 // 注册service
@@ -59,9 +56,4 @@ func (ms *MicroServer) StartServer() bool {
 	}
 	ms.Log.Info().Msg("rpcx start success")
 	return true
-}
-
-func (ms *MicroServer) StopServer() {
-	time.Sleep(60 * time.Second)
-	ms.RpcxServer.Close()
 }
