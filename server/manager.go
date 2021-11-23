@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	log "github.com/rs/zerolog"
 
 	"github.com/smallnest/rpcx/server"
@@ -29,11 +31,12 @@ func (ms *MicroServer) AddServerPlugin(serverPlugin ServerPlugin) {
 
 // 下架service 一分钟后停止服务
 func (ms *MicroServer) UnRegistryService() {
+	ms.Log.Info().Msg("UnRegistryService success !!!!")
+	fmt.Println("UnRegistryService success !!!!")
 	if err := ms.RpcxServer.UnregisterAll(); err != nil {
-		ms.Log.Err(err).Msg("UnRegistryService")
+		fmt.Println("UnRegistryService fail !!!!")
 		return
 	}
-	ms.Log.Info().Msg("UnRegistryService success !!!!")
 }
 
 // 注册service
@@ -50,10 +53,12 @@ func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 
 // 启动一个微服务监听服务
 func (ms *MicroServer) StartServer() bool {
+	fmt.Println("rpcx start success")
 	err := ms.RpcxServer.Serve("tcp", ms.ServiceAddress)
 	if err != nil {
 		panic(err)
 	}
-	ms.Log.Info().Msg("rpcx start success")
+	fmt.Println("rpcx start fail")
+	ms.Log.Info().Msg("rpcx start fail")
 	return true
 }
