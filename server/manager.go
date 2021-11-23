@@ -53,12 +53,11 @@ func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 
 // 启动一个微服务监听服务
 func (ms *MicroServer) StartServer() bool {
-	fmt.Println("rpcx start success")
+	fmt.Println("rpcx start success", ms.ServiceAddress, ms.RpcxServer)
 	err := ms.RpcxServer.Serve("tcp", ms.ServiceAddress)
 	if err != nil {
+		fmt.Println("rpcx start fail", err, ms.ServiceAddress)
 		panic(err)
 	}
-	fmt.Println("rpcx start fail")
-	ms.Log.Info().Msg("rpcx start fail")
 	return true
 }
