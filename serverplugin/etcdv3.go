@@ -81,7 +81,7 @@ func (p *EtcdV3RegisterPlugin) Start() error {
 						log.Errorf("cannot re-create etcd path %s: %v", nodePath, err)
 					}
 				}
-				fmt.Println("..........")
+				log.Infof("etcd reconn........")
 			}
 		}
 	}()
