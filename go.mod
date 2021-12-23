@@ -9,7 +9,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0
 	github.com/rpcxio/libkv v0.5.1-0.20210420120011-1fceaedca8a5
 	github.com/rs/zerolog v1.20.0
-	github.com/smallnest/rpcx v1.6.11
+	github.com/smallnest/rpcx v1.6.12-0.20211217004229-1f3a2432328c
 	github.com/soheilhy/cmux v0.1.5-0.20210205191134-5ec6847320e5 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/xurwxj/gtils v1.0.1
