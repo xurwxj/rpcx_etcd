@@ -131,7 +131,7 @@ func StartServer() {
 func stop(server *serverEtcd.MicroServer) {
 	time.Sleep(15 * time.Second)
 	server.UnRegistryService()
-	fmt.Println("..start UnRegistryService...............")
+	fmt.Println("..start UnRegistryService.................")
 
 }
 func startClient() {
