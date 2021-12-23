@@ -9,7 +9,6 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/rpcxio/libkv/store"
-	"github.com/rpcxio/rpcx-etcd/serverplugin"
 	"github.com/rs/zerolog"
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/server"
@@ -19,25 +18,27 @@ import (
 	"github.com/xurwxj/rpcx_etcd/discovery"
 	"github.com/xurwxj/rpcx_etcd/registry"
 	serverEtcd "github.com/xurwxj/rpcx_etcd/server"
+	"github.com/xurwxj/rpcx_etcd/serverplugin"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
 	addr     = flag.String("addr", "localhost:8973", "server address")
-	etcdAddr = flag.String("etcdAddr", "etcd.shining3d.io:2399", "etcd address")
+	etcdAddr = flag.String("etcdAddr", "10.20.31.17:22379", "etcd address")
 	basePath = flag.String("base", "/services/dev", "prefix path")
 )
 
+//etcd.shining3d.io:2399
 func main() {
 
 	flag.Parse()
 	// go configs()
 	// go startClient()
-	// go StartServer()
+	go StartServer()
 	// time.Sleep(2 * time.Second)
 	// go startClient()
-	go watchServices()
+	// go watchServices()
 	// time.Sleep(1 * time.Second)
 
 	// go test()
@@ -73,8 +74,9 @@ func test() {
 
 func watchServices() {
 	options := &store.Config{
-		Username: "devserver",
-		Password: "o9i8u7y6",
+		// Username:          "devserver",
+		// Password:          "o9i8u7y6",
+		PersistConnection: true,
 	}
 	param := &discovery.ServiceWactchParam{
 		BasePath:   "/services",
@@ -98,13 +100,13 @@ func StartServer() {
 		ServiceAddress: "tcp@" + *addr,
 		EtcdServers:    []string{*etcdAddr},
 		BasePath:       *basePath,
-		UpdateInterval: time.Minute,
+		UpdateInterval: 30 * time.Second,
 		Options:        new(store.Config),
 	}
-	r.UpdateInterval = -1
-
-	r.Options.Username = "devserver"
-	r.Options.Password = "o9i8u7y6"
+	// r.UpdateInterval = 4
+	r.Options.PersistConnection = true
+	// r.Options.Username = "devserver"
+	// r.Options.Password = "o9i8u7y6"
 	server.AddServerPlugin(r)
 	rs := []registry.ServiceFuncItem{
 		registry.GetServiceFunc(registry.ServiceFuncOBJ{
@@ -120,6 +122,7 @@ func StartServer() {
 			SFMeta:            registry.ServiceFuncMeta{Funcs: []string{"DentalEDRFS"}},
 		}),
 	}
+
 	server.RegistryService(rs)
 	go server.StartServer()
 	// go stop(server)

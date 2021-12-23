@@ -7,7 +7,6 @@ import (
 	log "github.com/rs/zerolog"
 
 	cmap "github.com/orcaman/concurrent-map"
-	etcd_client "github.com/rpcxio/rpcx-etcd/client"
 	"github.com/smallnest/rpcx/client"
 )
 
@@ -62,7 +61,7 @@ func getXclient(service string) client.XClient {
 		}
 	}
 
-	d, err := etcd_client.NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
+	d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
 	if err != nil {
 		clientConfig.Log.Err(err).Msg("GetXclient")
 		return nil

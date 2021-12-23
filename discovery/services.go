@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/rpcxio/libkv/store"
-	etcd_client "github.com/rpcxio/rpcx-etcd/client"
 	"github.com/smallnest/rpcx/client"
+	etcd_client "github.com/xurwxj/rpcx_etcd/client"
 )
 
 type ServiceWactchParam struct {
