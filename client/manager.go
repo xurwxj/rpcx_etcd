@@ -61,16 +61,14 @@ func getXclient(service string) client.XClient {
 			return x
 		}
 	}
-	if EtcdClient == nil {
-		d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
-		if err != nil {
-			clientConfig.Log.Err(err).Msg("GetXclient")
-			return nil
-		}
-		EtcdClient = d
+	// TODO 复用Discovery
+	d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
+	if err != nil {
+		clientConfig.Log.Err(err).Msg("GetXclient")
+		return nil
 	}
 
-	xclientPool := client.NewXClientPool(clientConfig.PoolSize, service, clientConfig.FailMode, clientConfig.SelectMode, EtcdClient, clientConfig.Option)
+	xclientPool := client.NewXClientPool(clientConfig.PoolSize, service, clientConfig.FailMode, clientConfig.SelectMode, d, clientConfig.Option)
 	serviceClientPoolMap.Set(service, xclientPool)
 	return xclientPool.Get()
 }

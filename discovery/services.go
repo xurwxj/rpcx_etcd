@@ -37,8 +37,7 @@ type ServiceData struct {
 func StartWatchServices(param *ServiceWactchParam) {
 	param.Mod = fmt.Sprintf("%s/", param.Mod)
 	d, _ := etcd_client.NewEtcdV3Discovery(param.BasePath, param.Mod, param.EtcdAddrss, true, param.Options)
-	etcd_client.EtcdClient = d
-	watchCh := etcd_client.EtcdClient.WatchService()
+	watchCh := d.WatchService()
 	for serviceData := range watchCh {
 		collectServiceData(serviceData, param.CallBack)
 	}
