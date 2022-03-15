@@ -12,6 +12,7 @@ import (
 
 var serviceClientPoolMap cmap.ConcurrentMap
 var clientConfig *RpcxClientConfig
+var EtcdClient client.ServiceDiscovery
 
 type RpcxClientConfig struct {
 	BasePath   string   // /services/dev
@@ -60,13 +61,16 @@ func getXclient(service string) client.XClient {
 			return x
 		}
 	}
-
-	d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
-	if err != nil {
-		clientConfig.Log.Err(err).Msg("GetXclient")
-		return nil
+	if EtcdClient == nil {
+		d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
+		if err != nil {
+			clientConfig.Log.Err(err).Msg("GetXclient")
+			return nil
+		}
+		EtcdClient = d
 	}
-	xclientPool := client.NewXClientPool(clientConfig.PoolSize, service, clientConfig.FailMode, clientConfig.SelectMode, d, clientConfig.Option)
+
+	xclientPool := client.NewXClientPool(clientConfig.PoolSize, service, clientConfig.FailMode, clientConfig.SelectMode, EtcdClient, clientConfig.Option)
 	serviceClientPoolMap.Set(service, xclientPool)
 	return xclientPool.Get()
 }

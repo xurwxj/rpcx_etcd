@@ -28,6 +28,7 @@ type EtcdV3 struct {
 	cfg            clientv3.Config
 	done           chan struct{}
 	startKeepAlive chan struct{}
+	collectW       chan string
 
 	AllowKeyNotFound bool
 
@@ -47,6 +48,7 @@ func Register() {
 func New(addrs []string, options *store.Config) (store.Store, error) {
 	s := &EtcdV3{
 		done:           make(chan struct{}),
+		collectW:       make(chan string),
 		startKeepAlive: make(chan struct{}),
 		ttl:            defaultTTL,
 	}
@@ -301,10 +303,8 @@ func (s *EtcdV3) Watch(key string, stopCh <-chan struct{}) (<-chan *store.KVPair
 // a given directory
 func (s *EtcdV3) WatchTree(directory string, stopCh <-chan struct{}) (<-chan []*store.KVPair, error) {
 	watchCh := make(chan []*store.KVPair)
-
+	go s.collectWatch(watchCh)
 	go func() {
-		defer close(watchCh)
-
 		list, err := s.List(directory)
 		if err != nil {
 			if !s.AllowKeyNotFound || err != store.ErrKeyNotFound {
@@ -319,19 +319,54 @@ func (s *EtcdV3) WatchTree(directory string, stopCh <-chan struct{}) (<-chan []*
 			select {
 			case <-s.done:
 				return
-			case <-rch:
-				list, err := s.List(directory)
-				if err != nil {
-					if !s.AllowKeyNotFound || err != store.ErrKeyNotFound {
-						return
-					}
+			case _, ok := <-rch:
+				if !ok {
+					s.collectW <- "close"
+					return
 				}
-				watchCh <- list
+				s.collectW <- directory
 			}
 		}
 	}()
 
 	return watchCh, nil
+}
+
+func (s *EtcdV3) collectWatch(watchCh chan []*store.KVPair) {
+	directoryMap := make(map[string]bool)
+	nowTime := time.Now().UTC().Second()
+	tick := time.NewTicker(2 * time.Second)
+	defer close(watchCh)
+	defer tick.Stop()
+	for {
+		select {
+		case directory, ok := <-s.collectW:
+			if !ok || directory == "close" {
+				return
+			}
+			directoryMap[directory] = true
+			nowTime = time.Now().UTC().Second()
+			tick.Reset(2 * time.Second)
+		case <-tick.C:
+			tmpTime := time.Now().UTC().Second()
+			if tmpTime-nowTime < 2 {
+				continue
+			}
+			for directory, _ := range directoryMap {
+				list, err := s.List(directory)
+				if err != nil {
+					if !s.AllowKeyNotFound || err != store.ErrKeyNotFound {
+						continue
+					}
+				}
+				watchCh <- list
+			}
+			if len(directoryMap) > 0 {
+				directoryMap = make(map[string]bool)
+			}
+			tick.Stop()
+		}
+	}
 }
 
 type etcdLock struct {
@@ -363,8 +398,12 @@ func (s *EtcdV3) List(directory string) ([]*store.KVPair, error) {
 	}
 
 	for _, kv := range resp.Kvs {
+		key := string(kv.Key)
+		if !strings.Contains(key, "@") {
+			continue
+		}
 		pair := &store.KVPair{
-			Key:       string(kv.Key),
+			Key:       key,
 			Value:     kv.Value,
 			LastIndex: uint64(kv.Version),
 		}
