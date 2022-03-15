@@ -13,11 +13,11 @@ require (
 	github.com/soheilhy/cmux v0.1.5-0.20210205191134-5ec6847320e5 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/xurwxj/gtils v1.0.1
-	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/client/v3 v3.5.2
 
 )
 
 replace (
-	go.etcd.io/etcd/api/v3 => go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/api/v3 => go.etcd.io/etcd/api/v3 v3.5.2
+	go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.2
 )
