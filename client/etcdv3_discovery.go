@@ -47,8 +47,10 @@ func NewEtcdV3Discovery(basePath string, servicePath string, etcdAddr []string, 
 	if ev3, ok := kv.(*etcd.EtcdV3); ok {
 		ev3.AllowKeyNotFound = allowKeyNotFound
 	}
-
-	return NewEtcdV3DiscoveryStore(basePath+"/"+servicePath, kv, allowKeyNotFound)
+	if servicePath != "" {
+		basePath = basePath + "/" + servicePath
+	}
+	return NewEtcdV3DiscoveryStore(basePath, kv, allowKeyNotFound)
 }
 
 // NewEtcdV3DiscoveryStore return a new EtcdV3Discovery with specified store.
