@@ -44,9 +44,13 @@ func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 	for _, sf := range rs {
 		switch sf.SFType {
 		case "func":
-			ms.RpcxServer.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta)
+			if err := ms.RpcxServer.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta); err != nil {
+				ms.Log.Err(err).Str("sf.SFName", sf.SFName).Interface(" sf.SFCall", sf.SFCall).Str("sf.SFMeta", sf.SFMeta).Msg("RegistryService:RegisterFunction !!!!")
+			}
 		case "class":
-			ms.RpcxServer.RegisterName(sf.SFName, sf.SFCall, sf.SFMeta)
+			if err := ms.RpcxServer.RegisterName(sf.SFName, sf.SFCall, sf.SFMeta); err != nil {
+				ms.Log.Err(err).Str("sf.SFName", sf.SFName).Interface(" sf.SFCall", sf.SFCall).Str("sf.SFMeta", sf.SFMeta).Msg("RegistryService:RegisterFunction !!!!")
+			}
 		}
 	}
 }

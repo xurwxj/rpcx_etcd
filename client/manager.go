@@ -42,7 +42,7 @@ func CallService(service, serviceMethod string, args, reply interface{}) bool {
 	}
 	err := xclient.Call(ctx, serviceMethod, args, reply)
 	if err != nil {
-		clientConfig.Log.Err(err).Msg("get service client ")
+		clientConfig.Log.Err(err).Interface("serviceMethod", serviceMethod).Msg("get service client ")
 		return false
 	}
 	return true
@@ -61,7 +61,7 @@ func getXclient(service string) client.XClient {
 			return x
 		}
 	}
-	// TODO 复用Discovery
+
 	d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
 	if err != nil {
 		clientConfig.Log.Err(err).Msg("GetXclient")
