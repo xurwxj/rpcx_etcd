@@ -1,9 +1,10 @@
 package discovery
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	json "github.com/json-iterator/go"
 
 	"github.com/rpcxio/libkv/store"
 	"github.com/smallnest/rpcx/client"

@@ -66,6 +66,12 @@ func StartServer() {
 	go server.StartServer()
 }
 
+func stop(server *serverEtcd.MicroServer) {
+	time.Sleep(15 * time.Second)
+	server.UnRegistryService()
+	fmt.Println("..start UnRegistryService.................")
+
+}
 func startClient() {
 	param := &service_client.RpcxClientConfig{
 		BasePath:   *basePath,
