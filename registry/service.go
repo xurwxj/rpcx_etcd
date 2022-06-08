@@ -44,6 +44,8 @@ type ServiceFuncOBJ struct {
 
 // ServiceFuncMeta used in service definition
 type ServiceFuncMeta struct {
+	// AppName: 应用名称
+	AppName string `json:"appName,omitempty"`
 	// name: 服务或接口唯一名，用英文，一般用于外部接入时避免网址写死，会在cdn的json作为key
 	URLName string `json:"name,omitempty"`
 	// funcName: 方法函数名
