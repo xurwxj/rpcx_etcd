@@ -3,6 +3,9 @@ package etcdv3
 import (
 	"context"
 	"errors"
+
+	"github.com/smallnest/rpcx/log"
+
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +39,7 @@ type EtcdV3 struct {
 	ttl int64
 }
 
-var ReConn chan int
+var ReConn chan bool
 
 // Register registers etcd to libkv
 func Register() {
@@ -94,14 +97,14 @@ func New(addrs []string, options *store.Config) (store.Store, error) {
 				ch, kaerr = cli.KeepAlive(context.Background(), s.leaseID)
 			}
 			if ReConn == nil {
-				ReConn = make(chan int)
-			} else {
-				ReConn <- 1
+				ReConn = make(chan bool)
 			}
 			if kaerr == nil {
+				ReConn <- true
 				break
 			}
-			time.Sleep(time.Second)
+			log.Errorf(" etcd KeepAlive error", kaerr)
+			time.Sleep(5 * time.Second)
 		}
 
 		for {
@@ -109,32 +112,33 @@ func New(addrs []string, options *store.Config) (store.Store, error) {
 			case <-s.done:
 				return
 			case resp := <-ch:
-				if resp == nil { // connection is closed
-					cli.Close()
-					for {
-						select {
-						case <-s.done:
-							return
-						default:
-							err = s.init()
-							if err != nil {
-								time.Sleep(time.Second)
-								continue
-							}
-							s.mu.RLock()
-							err = s.grant(s.ttl)
-							s.mu.RUnlock()
-							if err != nil {
-								s.client.Close()
-								time.Sleep(time.Second)
-								continue
-							}
-
-							goto rekeepalive
-						}
-					}
-
+				if resp != nil { // connection is closed
+					continue
 				}
+				cli.Close()
+				for {
+					select {
+					case <-s.done:
+						return
+					default:
+						err = s.init()
+						if err != nil {
+							time.Sleep(time.Second)
+							continue
+						}
+						s.mu.RLock()
+						err = s.grant(s.ttl)
+						s.mu.RUnlock()
+						if err != nil {
+							s.client.Close()
+							time.Sleep(time.Second)
+							continue
+						}
+
+						goto rekeepalive
+					}
+				}
+
 			}
 		}
 	}()

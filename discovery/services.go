@@ -29,6 +29,7 @@ type ServiceData struct {
 	ProductLines []string `json:"productLines,omitempty"`
 	Funcs        []string `json:"funcs,omitempty" `
 	Hosts        []string `json:"hosts,omitempty" `
+	AppName      string   `json:"appName"`
 }
 
 // 启动一个etcd 监听，服务发生变动都会触发通知 go StartWatchServices()
@@ -47,7 +48,8 @@ func StartWatchServices(param *ServiceWactchParam) {
 // 将通知的数据做处理 过滤一些没带地址的数据
 // xxxxx.product.ed.status/tcp@localhost:8972 这些是需要的数据key
 func collectServiceData(wresp []*client.KVPair, callBack func(map[string]ServiceData)) {
-	tmpData := make(map[string]ServiceData)
+	tmpData := make(map[string]ServiceData, len(wresp))
+	appData := make(map[string]ServiceData)
 	for _, v := range wresp {
 		keys := strings.Split(v.Key, "/")
 		if len(keys) != 2 {
@@ -77,6 +79,19 @@ func collectServiceData(wresp []*client.KVPair, callBack func(map[string]Service
 		}
 		serviceInfo.Hosts = append(serviceInfo.Hosts, strs[1])
 		tmpData[serviceName] = serviceInfo
+	}
+
+	for k, v := range tmpData {
+		if k == v.AppName {
+			continue
+		}
+		if _, ok := appData[k]; !ok {
+			appData[v.AppName] = v
+		}
+	}
+
+	for k, v := range appData {
+		tmpData[k] = v
 	}
 	if len(tmpData) > 0 && callBack != nil {
 		callBack(tmpData)

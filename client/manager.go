@@ -33,16 +33,16 @@ func InitClient(rpcxClientConfig *RpcxClientConfig) {
 }
 
 // 向微服务发送rpcx请求
-func CallService(service, serviceMethod string, args, reply interface{}) bool {
-	ctx := context.Background()
-	xclient := getXclient(service)
+func CallService(appName, serviceMethod string, args, reply interface{}) bool {
+	xclient := getXclient(appName)
 	if xclient == nil {
-		clientConfig.Log.Error().Msg("get service client nil ")
+		clientConfig.Log.Error().Str("appName", appName).Str("serviceMethod", serviceMethod).Msg("get service client nil ")
 		return false
 	}
+	ctx := context.Background()
 	err := xclient.Call(ctx, serviceMethod, args, reply)
 	if err != nil {
-		clientConfig.Log.Err(err).Interface("serviceMethod", serviceMethod).Msg("get service client ")
+		clientConfig.Log.Err(err).Str("appName", appName).Interface("serviceMethod", serviceMethod).Msg("get service client ")
 		return false
 	}
 	return true
@@ -64,7 +64,7 @@ func getXclient(service string) client.XClient {
 
 	d, err := NewEtcdV3Discovery(clientConfig.BasePath, service, clientConfig.EtcdAddrss, true, clientConfig.Options)
 	if err != nil {
-		clientConfig.Log.Err(err).Msg("GetXclient")
+		clientConfig.Log.Err(err).Str("appName", service).Str("basePath", clientConfig.BasePath).Msg("GetXclient")
 		return nil
 	}
 

@@ -35,6 +35,7 @@ type EtcdV3RegisterPlugin struct {
 	metasLock      sync.RWMutex
 	metas          map[string]string
 	UpdateInterval time.Duration
+	Expired        time.Duration
 
 	Options *store.Config
 	kv      store.Store
@@ -45,6 +46,9 @@ type EtcdV3RegisterPlugin struct {
 
 // Start starts to connect etcd cluster
 func (p *EtcdV3RegisterPlugin) Start() error {
+	if p.Expired == 0 {
+		p.Expired = p.UpdateInterval
+	}
 	if p.done == nil {
 		p.done = make(chan struct{})
 	}
@@ -61,7 +65,7 @@ func (p *EtcdV3RegisterPlugin) Start() error {
 		p.kv = kv
 	}
 
-	err := p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true, TTL: p.UpdateInterval + time.Second})
+	err := p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true, TTL: p.UpdateInterval + p.Expired})
 	if err != nil && !strings.Contains(err.Error(), "Not a file") {
 		log.Errorf("cannot create etcd path %s: %v", p.BasePath, err)
 		return err
@@ -76,9 +80,10 @@ func (p *EtcdV3RegisterPlugin) Start() error {
 					meta := p.metas[name]
 					p.metasLock.RUnlock()
 
-					err = p.kv.Put(nodePath, []byte(meta), &store.WriteOptions{TTL: p.UpdateInterval + time.Second})
+					err = p.kv.Put(nodePath, []byte(meta), &store.WriteOptions{TTL: p.UpdateInterval + p.Expired})
 					if err != nil {
-						log.Errorf("cannot re-create etcd path %s: %v", nodePath, err)
+						log.Errorf("cannot re-create etcd path", nodePath, err)
+						break
 					}
 				}
 				log.Infof("etcd reconn........")
@@ -165,7 +170,7 @@ func (p *EtcdV3RegisterPlugin) Register(name string, rcvr interface{}, metadata 
 	}
 
 	nodePath = fmt.Sprintf("%s/%s/%s", p.BasePath, name, p.ServiceAddress)
-	err = p.kv.Put(nodePath, []byte(metadata), &store.WriteOptions{TTL: p.UpdateInterval * 2})
+	err = p.kv.Put(nodePath, []byte(metadata), &store.WriteOptions{TTL: p.UpdateInterval + p.Expired})
 	if err != nil {
 		log.Errorf("cannot create etcd path %s: %v", nodePath, err)
 		return err
@@ -223,7 +228,7 @@ func (p *EtcdV3RegisterPlugin) Unregister(name string) (err error) {
 
 	err = p.kv.Delete(nodePath)
 	if err != nil {
-		log.Errorf("cannot create consul path %s: %v", nodePath, err)
+		log.Errorf("cannot create etcd path %s: %v", nodePath, err)
 		return err
 	}
 
