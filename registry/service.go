@@ -5,6 +5,7 @@ import "github.com/xurwxj/gtils/base"
 // GetServiceFunc convert service obj to service definition
 func GetServiceFunc(s ServiceFuncOBJ) (sf ServiceFuncItem) {
 	sf.ServiceFuncCommon = s.ServiceFuncCommon
+	sf.AppName = s.SFMeta.AppName
 	meta := base.GetStringFromInterface(s.SFMeta)
 	switch s.SFType {
 	case "func":
@@ -29,7 +30,8 @@ type ServiceFuncCommon struct {
 	// 	SFType 有两种值：
 	//   - func 表示单个函数作为服务，适合某个接口就是单独的http服务
 	//   - class 适合把一些函数做集合，挂到统一的struct下，这些函数一般是不提供http服务的，只用于服务间的调用
-	SFType string
+	AppName string
+	SFType  string
 	// 服务名，一般是用java类名的定义方式，比如xxxxxx.app.app
 	SFName string
 	// 真正的服务执行方法或类

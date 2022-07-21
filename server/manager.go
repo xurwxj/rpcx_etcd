@@ -34,7 +34,7 @@ func (ms *MicroServer) UnRegistryService() {
 	ms.Log.Info().Msg("UnRegistryService success !!!!")
 	fmt.Println("UnRegistryService success !!!!")
 	if err := ms.RpcxServer.UnregisterAll(); err != nil {
-		fmt.Println("UnRegistryService fail !!!!")
+		fmt.Println("UnRegistryService fail !!!!", err)
 		return
 	}
 }
@@ -47,6 +47,7 @@ func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 			if err := ms.RpcxServer.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta); err != nil {
 				ms.Log.Err(err).Str("sf.SFName", sf.SFName).Interface(" sf.SFCall", sf.SFCall).Str("sf.SFMeta", sf.SFMeta).Msg("RegistryService:RegisterFunction !!!!")
 			}
+			ms.RpcxServer.RegisterFunction(sf.AppName, sf.SFCall, sf.SFMeta)
 		case "class":
 			if err := ms.RpcxServer.RegisterName(sf.SFName, sf.SFCall, sf.SFMeta); err != nil {
 				ms.Log.Err(err).Str("sf.SFName", sf.SFName).Interface(" sf.SFCall", sf.SFCall).Str("sf.SFMeta", sf.SFMeta).Msg("RegistryService:RegisterFunction !!!!")
