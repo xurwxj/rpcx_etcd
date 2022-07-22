@@ -11,6 +11,7 @@ require (
 	github.com/smallnest/rpcx v1.7.4
 	github.com/stretchr/testify v1.7.1
 	github.com/xurwxj/gtils v1.0.21-0.20220323191446-a588f6533624
+	github.com/xurwxj/viper v1.7.1
 	go.etcd.io/etcd/client/v3 v3.5.2
 )
 
