@@ -2,21 +2,16 @@ package registry
 
 import (
 	"github.com/xurwxj/gtils/base"
-	"github.com/xurwxj/viper"
 )
 
 // GetServiceFunc convert service obj to service definition
 func GetServiceFunc(s ServiceFuncOBJ) (sf ServiceFuncItem) {
 	sf.ServiceFuncCommon = s.ServiceFuncCommon
-	sf.AppName = s.SFMeta.AppName
-	if sf.AppName == "" {
-		sf.AppName = viper.GetString("server.config.dataID")
-	}
-	meta := base.GetStringFromInterface(s.SFMeta)
 	switch s.SFType {
 	case "func":
-		sf.SFMeta = `httpInfo=` + meta
+		sf.TmpSFMeta = s.SFMeta
 	case "class":
+		meta := base.GetStringFromInterface(s.SFMeta)
 		sf.SFMeta = `funcs=` + meta
 	}
 	return
@@ -28,7 +23,8 @@ type ServiceFuncItem struct {
 	// 压缩后的meta信息
 	// funcs=["APICheck","APIUserCheck","APIUserPermCheck"]
 	// httpInfo={"name":"resourceKeyList","funcName":"ResourceKeyList","path":"/settings/r/:nameCode/:keyName","method":"GET","auth":"api","productLines":["dentalscan","scan","dlp","thirdpartner"]}
-	SFMeta string
+	SFMeta    string
+	TmpSFMeta ServiceFuncMeta
 }
 
 // ServiceFuncCommon used in service definition
