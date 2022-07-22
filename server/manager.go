@@ -7,6 +7,7 @@ import (
 
 	"github.com/smallnest/rpcx/server"
 	"github.com/xurwxj/rpcx_etcd/registry"
+	"github.com/xurwxj/viper"
 )
 
 type MicroServer struct {
@@ -44,6 +45,9 @@ func (ms *MicroServer) RegistryService(rs []registry.ServiceFuncItem) {
 	for _, sf := range rs {
 		switch sf.SFType {
 		case "func":
+			if sf.AppName == "" {
+				sf.AppName = viper.GetString("server.config.dataID")
+			}
 			if err := ms.RpcxServer.RegisterFunction(sf.SFName, sf.SFCall, sf.SFMeta); err != nil {
 				ms.Log.Err(err).Str("sf.SFName", sf.SFName).Interface(" sf.SFCall", sf.SFCall).Str("sf.SFMeta", sf.SFMeta).Msg("RegistryService:RegisterFunction !!!!")
 			}
